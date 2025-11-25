@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = "https://email-agent-xrvv.vercel.app/api";
 
 export async function getEmails() {
   const res = await axios.get(`${API_URL}/emails`);

@@ -6,7 +6,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- STATE (mirror of Python mock DB) ---
 const MOCK_DB = {
   emails: [
     {
@@ -33,19 +32,15 @@ const MOCK_DB = {
   drafts: {},
 };
 
-// --- Helper to simulate/query LLM ---
-// Lazy-loaded GenAI client (cached)
 let _genaiClient = null;
 async function getGenaiClient() {
   if (_genaiClient) return _genaiClient;
   try {
     const mod = await import("@google/genai");
     const { GoogleGenAI } = mod;
-    // The client will read GEMINI_API_KEY from the environment as in the example
     _genaiClient = new GoogleGenAI({});
     return _genaiClient;
   } catch (err) {
-    // If import fails, surface a clear error when trying to call
     throw new Error(`Failed to load @google/genai: ${err.message || err}`);
   }
 }
@@ -56,24 +51,18 @@ async function queryGemini(apiKey, systemInstruction, userInput) {
     return { error: "API Key is missing. Set GEMINI_API_KEY in server environment or provide api_key." };
   }
 
-  // Build a combined prompt from system instruction and user input
   const promptText = [systemInstruction || "", userInput || ""].filter(Boolean).join("\n\n");
 
-  // Allow model override via environment variable, otherwise use gemini-2.0-flash
   const model = process.env.GEMINI_MODEL || process.env.GENERATIVE_MODEL || "gemini-2.0-flash";
 
   try {
     const client = await getGenaiClient();
-
-    // Some SDKs take an options object where API key is provided; the example assumes env var.
-    // But ensure the key is present in env for the SDK. We don't pass effectiveKey directly to the SDK here.
 
     const response = await client.models.generateContent({
       model,
       contents: promptText,
     });
 
-    // Normalize response: the example shows response.text; keep raw in case SDK differs
     const text = response && (response.text || (response?.candidates && response.candidates[0]?.content) || "");
     return { text, raw: response };
   } catch (err) {
@@ -219,5 +208,5 @@ app.post("/api/drafts", (req, res) => {
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
-  console.log(`Node backend listening on http://0.0.0.0:${PORT}`);
+  console.log(`Node backend listening on ${PORT}`);
 });
